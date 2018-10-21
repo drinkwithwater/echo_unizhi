@@ -6,8 +6,8 @@ proj_luaclib		= "./luaclib/"..OS.."/?.so;"
 thread = 4
 
 logger = "userlog"
---logpath = "./log/"
---daemon = "$SUB_START"..".pid"
+logpath = "./log/".."$SUB_START"
+daemon = "$SUB_START"..".pid"
 
 logservice = "snlua"
 harbor = 0
