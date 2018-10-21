@@ -1,0 +1,30 @@
+OS 					= "$OS_NAME"
+
+proj_lua			= "./?.lua;./lualib/?.lua;./server/?.lua;./client/?.lua;"
+proj_luaclib		= "./luaclib/"..OS.."/?.so;"
+
+thread = 4
+
+logger = "userlog"
+--logpath = "./log/"
+--daemon = "$SUB_START"..".pid"
+
+logservice = "snlua"
+harbor = 0
+start = "$SUB_START"	   -- main script
+bootstrap = "snlua bootstrap"	-- The service for bootstrap
+
+snax = proj_lua
+luaservice = "./skynet/service/?.lua;"..proj_lua
+lua_path = "./skynet/lualib/compat10/?.lua;./skynet/lualib/?.lua;"..proj_lua
+
+lua_cpath = "./skynet/luaclib/?.so;"..proj_luaclib
+cpath = "./skynet/cservice/?.so"
+
+lualoader = "./skynet/lualib/loader.lua"
+
+-- clientss->tcpserver->kcpserver->serverss
+
+tcp_ip = "127.0.0.1"
+kcp_ip = "127.0.0.1"
+port = 10086
