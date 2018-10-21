@@ -20,8 +20,8 @@ skynet.register_protocol {
 	id = skynet.PTYPE_CLIENT,
 }
 
-local tcp_ip = skynet.getenv("tcp_ip")
-local tcp_port = tonumber(skynet.getenv("port"))
+local tcp_ip = skynet.getenv("server_tcp_ip")
+local tcp_port = tonumber(skynet.getenv("server_tcp_port"))
 
 -- 关闭agent, fromAgent表示该命令是由agent触发
 local function close_agent(kcpfd)

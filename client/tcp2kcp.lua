@@ -23,8 +23,8 @@ skynet.register_protocol {
 	id = skynet.PTYPE_CLIENT,
 }
 
-local kcp_ip = skynet.getenv("kcp_ip")
-local kcp_port = tonumber(skynet.get("port"))
+local kcp_ip = skynet.getenv("middle_kcp_ip")
+local kcp_port = tonumber(skynet.getenv("middle_kcp_port"))
 
 local kcpCounter = 1
 

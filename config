@@ -25,6 +25,12 @@ lualoader = "./skynet/lualib/loader.lua"
 
 -- clientss->tcpserver->kcpserver->serverss
 
-tcp_ip = "127.0.0.1"
-kcp_ip = "127.0.0.1"
-port = 10086
+server_tcp_ip = "47.96.75.55"
+server_tcp_port = 9018
+
+middle_kcp_ip = "0.0.0.0"
+middle_kcp_port = 10085
+
+client_tcp_ip = "0.0.0.0"
+client_tcp_port = 10086
+
