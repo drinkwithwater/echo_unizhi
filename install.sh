@@ -1,4 +1,4 @@
-git clone https://github.com/cloudwu/skynet
+git submodule update --init
 cd skynet
 if [ $system_name == "Darwin" ]; then
 	make mac
