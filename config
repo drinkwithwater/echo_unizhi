@@ -1,7 +1,5 @@
-OS 					= "$OS_NAME"
-
 proj_lua			= "./?.lua;./lualib/?.lua;./server/?.lua;./client/?.lua;"
-proj_luaclib		= "./luaclib/"..OS.."/?.so;"
+proj_luaclib		= "./luaclib/?.so;"
 
 thread = 4
 

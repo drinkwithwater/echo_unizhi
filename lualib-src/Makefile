@@ -1,7 +1,8 @@
 CC ?= gcc
 
 
-LUA_INC ?= ../skynet/3rd/lua
+SKYNET_ROOT = ../skynet
+LUA_INC ?= $(SKYNET_ROOT)/3rd/lua
 BUILD_PATH ?= ../luaclib
 
 CFLAGS = -Wl,-E -g -O2 -Wall -I$(LUA_INC)
