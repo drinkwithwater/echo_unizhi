@@ -1,3 +1,6 @@
 [submodule "skynet"]
 	path = skynet
 	url = https://github.com/cloudwu/skynet
+[submodule "lualib-src/kcp"]
+	path = lualib-src/kcp
+	url = https://github.com/skywind3000/kcp
