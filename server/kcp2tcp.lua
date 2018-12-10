@@ -1,5 +1,4 @@
 local skynet = require "skynet"
-local cjson = require "cjson"
 local tcp = require "socket"
 
 local SOCKET_TCP = 1

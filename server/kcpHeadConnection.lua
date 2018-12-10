@@ -1,6 +1,5 @@
 -- @author Chen Ze
 require "oo"
-local PackKcp = require "packkcp"
 local skynet = require "skynet"
 local socket = require "testudp"
 local UdpMessage = require "UdpMessage"

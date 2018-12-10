@@ -1,6 +1,5 @@
 
 local skynet = require "skynet"
-local cjson = require "cjson"
 local tcp = require "socket"
 local KcpUdpClient = require "kcpUdpClient"
 
