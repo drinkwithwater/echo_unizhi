@@ -32,6 +32,7 @@ function CMD.close()
 	socketdriver.close(socket)
 end
 
+-- defined in skynet_socket.h
 local toType = {
 	[1]="data",
 	[3]="close",
@@ -52,7 +53,7 @@ skynet.register_protocol {
 			local typeStr = toType[typeid]
 			if typeStr=="accept" then
 				socketdriver.start(ud)
-				skynet.send(watchdog, "lua", "socket", "open", ud, "unknown")
+				skynet.send(watchdog, "lua", "socket", "open", ud, data)
 			elseif typeStr=="data" then
 				local strData = netpack.tostring(data, ud)
 				skynet.send(watchdog, "lua", "socket", "data", fd, strData)
