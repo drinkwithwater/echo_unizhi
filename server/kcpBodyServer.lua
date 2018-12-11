@@ -47,18 +47,18 @@ skynet.register_protocol {
 	unpack = function (msg, sz)
 		return msg, sz
 	end,
-	dispatch = function (vSession, vSource, vMsg, vSize)
-		local nKcp = mFdToKcp[vSource]
+	dispatch = function (vFd, vSource, vMsg, vSize)
+		local nKcp = mFdToKcp[vFd]
 		if nKcp then
 			-- args should be ptr
 			PollKcp.lkcp_input_ptr4(nKcp, vMsg, vSize, skynet.now()*10)
 			local nLen, nData = PollKcp.lkcp_recv(nKcp)
 			while nLen > 0 do
-				KCP_LOCAL.redirect(vSource, mFdToAgent[vSource], nData)
+				KCP_LOCAL.redirect(vFd, mFdToAgent[vFd], nData)
 				nLen, nData = PollKcp.lkcp_recv(nKcp)
 			end
 		else
-			skynet.error("kcp connection not found when recving for fd=", vSource)
+			skynet.error("kcp connection not found when recving for fd=", vFd)
 		end
 	end
 }

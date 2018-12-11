@@ -25,9 +25,9 @@ local function udp_address(vFrom)
 end
 
 -- [public]
-function KcpHeadConnection:ctor(vUDPSocket, UDP_CMD)
+function KcpHeadConnection:ctor(vUDPSocket, vWatchdog)
 	self.mUDPSocket	=	vUDPSocket	-- udp socket
-	self.mCmd		=	UDP_CMD		-- api in service
+	self.mWatchdog  =	vWatchdog
 
 	self.mFd		=	nil			-- the first tcp bind with, used as a udp fd
 	self.mToken		=	nil			-- authorized token, also used as conv segments in kcp
@@ -47,60 +47,65 @@ function KcpHeadConnection:onOpen(vFd, vToken, vFrom, vBodyServer)
 	self.mBodyServer = vBodyServer
 
 	self.mState		=	STATE_SYN_RCVD
-	self:doUdpSend(vFrom, UdpMessage.s2cSyn(vFd, vToken))
+	self:doUdpSend(UdpMessage.s2cSyn(vFd, vToken))
 end
 
--- [public], when udpserver recv message, vParam1 is token when kcp, vParam1&vParam2 are oper&token when udp
-function KcpHeadConnection:onMessage(vParam1, vParam2, vStr, vFrom, vToughTime)
-	if vParam1>=0 and vParam1<=100 then
-		self:onUdpOper(vParam1, vParam2, vStr, vFrom, vToughTime)
-	else
-		self:onInput(vParam1, vStr, vToughTime)
+-- [private]
+function KcpHeadConnection:onConnected()
+	local nFd = self.mFd
+	local nToken = self.mToken
+	local nFrom = self.mFrom
+	local nBodyServer = self.mBodyServer
+	local nAddrStr = udp_address(nFrom)
+	skynet.error("kcp connected:", nFd, nAddrStr)
+	skynet.send(nBodyServer, "lua", "kcp", "open", nFd, nToken, nFrom)
+	skynet.send(self.mWatchdog, "lua", "socket", "open", nFd, nAddrStr, nToken, nBodyServer)
+end
+
+
+-- [public], control message
+function KcpHeadConnection:onUdpOper(vOper, vToken, vFrom)
+	if self.mToken ~= vToken then
+		skynet.error("udp:", self.mFd, " operudp with unexcept token")
+		return
 	end
-end
-
--- [private], udp oper except kcp message
-function KcpHeadConnection:onUdpOper(vOper, vToken, vStr, vFrom, vToughTime)
 	if self.mState == STATE_SYN_RCVD then
 		if vOper == UdpMessage.C2S_ACK then -- client handshake ACK
-			-- local _a, _b, _c, nMinrto, nMtu = UdpMessage.serverUnpack(vStr)
-			if self.mToken == vToken then
-				if self.mState==STATE_SYN_RCVD then
-					self.mState = STATE_ESTABLISHED
-					self.mCmd.connected(self.mFd, self.mToken, vFrom)
-					skynet.error("kcp connected:", self.mFd, udp_address(vFrom))
-				end
-				self:doUdpSend(vFrom, UdpMessage.s2cAck(self.mFd, self.mToken))
+			if self.mState==STATE_SYN_RCVD then
+				self.mState = STATE_ESTABLISHED
+				self:onConnected()
 			end
+			self:doUdpSend(UdpMessage.s2cAck(self.mFd, self.mToken))
 		end
 	elseif self.mState == STATE_ESTABLISHED then
 		if vOper == UdpMessage.C2S_ACK then -- client handshake ACK
-			if self.mToken == vToken then
-				self:doUdpSend(vFrom, UdpMessage.s2cAck(self.mFd, self.mToken))
-			end
+			self:doUdpSend(UdpMessage.s2cAck(self.mFd, self.mToken))
 		elseif vOper == UdpMessage.C2S_PING then -- client ping
-			if self.mToken == vToken then
-				self.mLastMsgTime = vToughTime
-			end
+			self.mLastMsgTime = skynet.now()
 		end
 	end
 end
 
--- [private], kcp input
-function KcpHeadConnection:onInput(vToken, vPayload, vToughTime)
-	if self.mToken ~= vToken then
+function KcpHeadConnection:checkFrom(vFrom)
+	return self.mFrom == vFrom
+end
+
+-- [public], kcp input
+function KcpHeadConnection:onInput(vToken, vPayload, vLen)
+	if self.mToken == vToken and self.mState == STATE_ESTABLISHED then
+		self.mLastMsgTime = skynet.now()
+		skynet.redirect(self.mBodyServer, 0, "socket", self.mFd, vPayload, vLen)
+		return true
+	else
 		local nAddr = udp_address(self.mFrom)
-		--skynet.error("udp:", nAddr, " send with unexcept token")
-	elseif self.mState == STATE_ESTABLISHED then
-		self.mLastMsgTime = vToughTime
-		self.mCmd.redirect(self.mFd, vPayload)
+		skynet.error("udp:", self.mFd, " send with unexcept token")
+		return false
 	end
 end
 
 -- [public], send by udp
-function KcpHeadConnection:doUdpSend(vFrom, vBuf)
-	self.mFrom = vFrom
-	socket.sendto(self.mUDPSocket, vFrom, vBuf)
+function KcpHeadConnection:doUdpSend(vBuf)
+	socket.sendto(self.mUDPSocket, self.mFrom, vBuf)
 end
 
 -- [public]

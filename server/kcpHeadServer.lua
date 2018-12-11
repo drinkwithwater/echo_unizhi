@@ -80,25 +80,20 @@ local function udpdispatch_ptr(vLen, vPtr, vFrom)
 		local nFd, nParam1, nParam2 = socket.ptrunpack_littleIII(vPtr)
 		local nConn = mFdToConn[nFd]
 		-- 如果连接存在，直接让它处理message
-		if nConn then
+		if nConn and nConn:checkFrom(vFrom) then
 			if nParam1>= TOKEN_RANGE_MIN then
-				-- check token and state, STATE_ESTABLISHED  = 2
-				if nConn.mToken == nParam1 and nConn.mState == 2 then
-					if nConn.mFrom ~= vFrom then
-						nConn.mFrom = vFrom
-						skynet.send(nConn.mBodyServer, "lua", "kcp", "setAddr", nFd, vFrom)
-					end
-					nConn.mLastMsgTime = mToughTime
-					skynet.redirect(nConn.mBodyServer, nFd, "socket", 0, vPtr, vLen)
-					nDoRedirect = true
-				end
+				nDoRedirect = nConn:onInput(nParam1, vPtr, vLen)
 			elseif nParam1>=0 then
-				nConn:onUdpOper(nParam1, nParam2, nil, vFrom, mToughTime)
+				nConn:onUdpOper(nParam1, nParam2, vFrom)
 			end
 		-- 如果连接不存在，并且是syn报文，直接新建连接
 		elseif nFd == 0 then
 			if nParam1 == SYN_I2 and nParam2 == SYN_I3 then
-				UDP_CMD.open(vFrom)
+				local nNewFd = genFd()
+				local nToken = math.random(TOKEN_RANGE_MIN, TOKEN_RANGE_MAX)
+				local nNewConn = KcpHeadConnection.new(mUDPSocket, mWatchdog)
+				nNewConn:onOpen(nNewFd, nToken, vFrom, getBodyServer(nNewFd))
+				mFdToConn[nNewFd] = nNewConn
 			end
 		-- 如果连接不存在，且发送的是ping，则返回rst
 		elseif nParam1 == UdpMessage.C2S_PING or nParam1 >= TOKEN_RANGE_MIN then
@@ -119,7 +114,7 @@ function CMD.open(conf)
 	mWatchdog = conf.watchdog
 	mUDPSocket = socket.lcreate(port)
 	for i=1, BODY_SERVER_NUM do
-		local nBodyServer = skynet.newservice("pollKcpBodyServer")
+		local nBodyServer = skynet.newservice("kcpBodyServer")
 		mBodyServerList[i] = nBodyServer
 		skynet.call(nBodyServer, "lua", "start", skynet.self(), mUDPSocket, mWatchdog)
 		if conf.clusterMode then
@@ -163,20 +158,6 @@ function CMD.exit()
 		socket.close(mUDPSocket)
 		mUDPSocket = nil
 	end
-end
-
-function UDP_CMD.open(vFrom)
-	local nNewFd = genFd()
-	local nToken = math.random(TOKEN_RANGE_MIN, TOKEN_RANGE_MAX)
-	local nConn = KcpHeadConnection.new(mUDPSocket, UDP_CMD)
-	nConn:onOpen(nNewFd, nToken, vFrom, getBodyServer(nNewFd))
-	mFdToConn[nNewFd] = nConn
-end
-
-function UDP_CMD.connected(vFd, vToken, vFrom)
-	local nBodyServer = getBodyServer(vFd)
-	skynet.send(nBodyServer, "lua", "kcp", "open", vFd, vToken, vFrom)
-	skynet.send(mWatchdog, "lua", "socket", "open", vFd, KcpHeadConnection.parseAddr(vFrom), vToken, nBodyServer)
 end
 
 function UDP_CMD.redirect(vFd, vPayload)
