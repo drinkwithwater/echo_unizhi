@@ -54,7 +54,6 @@ function SOCKET.open(tcpfd, addr)
 		kcpfd = kcpfd,
 		tcpfd = tcpfd,
 		addr = addr,
-		buffer_list = {},
 		kcpClient = KcpUdpClient.new(kcpfd, 0, KCP.onMessage),
 	}
 	agent.kcpClient:connect(kcp_ip, kcp_port)

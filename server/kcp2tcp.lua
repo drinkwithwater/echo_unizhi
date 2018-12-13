@@ -9,7 +9,6 @@ local SOCKET = {}
 local udpserver					-- Actually, this is udp gate
 
 local kcpAgent = {}
-local tcpAgent = {}
 
 local TOKEN_RANGE_MIN = 0x10000000
 local TOKEN_RANGE_MAX = 0x7fffffff
@@ -19,9 +18,6 @@ skynet.register_protocol {
 	id = skynet.PTYPE_CLIENT,
 }
 
-local tcp_ip = skynet.getenv("server_tcp_ip")
-local tcp_port = tonumber(skynet.getenv("server_tcp_port"))
-
 -- 关闭agent, fromAgent表示该命令是由agent触发
 local function close_agent(kcpfd)
 	local agent = kcpAgent[kcpfd]
@@ -29,7 +25,6 @@ local function close_agent(kcpfd)
 		local tcpfd = agent.tcpfd
 		if tcpfd then
 			tcp.close(tcpfd)
-			tcpAgent[tcpfd] = nil
 		end
 		kcpAgent[kcpfd] = nil
 	end
@@ -42,26 +37,13 @@ function SOCKET.open(kcpfd, addr, token, kcp_sender)
 		token = token,
 		kcpfd = kcpfd,
 		tcpfd = nil,
-		addr = addr,
+		src = addr,
+		dst = nil,
 		kcp_sender = kcp_sender,
 		buffer_list = {},
+		connecting = false,
 	}
 	kcpAgent[kcpfd] = agent
-	local tcpfd = tcp.open(tcp_ip, tcp_port)
-	agent.tcpfd = tcpfd
-	tcpAgent[tcpfd] = agent
-	for k, buffer in ipairs(agent.buffer_list) do
-		tcp.write(tcpfd, buffer)
-	end
-	while true do
-		local ret, err = tcp.read(tcpfd)
-		if not ret then
-			break
-		else
-			local buffer = string.pack(">s2", ret)
-			skynet.redirect(agent.kcp_sender, kcpfd, "client", 0, buffer)
-		end
-	end
 end
 
 function SOCKET.close(kcpfd)
@@ -78,6 +60,47 @@ function SOCKET.warning(kcpfd, size)
 	skynet.error("kcp socket warning", kcpfd, size)
 end
 
+local function data_preopen(kcpfd, msg)
+	local agent = kcpAgent[kcpfd]
+	-- tcp is connecting
+	if agent.dst and (not agent.tcpfd) then
+		table.insert(agent.buffer_list, msg)
+		return
+	end
+
+	-- tcp start connecting
+	agent.dst = msg
+	local tcp_ip, tcp_port = string.match(msg, "([^:]+):(.*)$")
+	local tcpfd = tcp.open(tcp_ip, tcp_port)
+
+	-- if agent closed
+	if not kcpAgent[kcpfd] then
+		socket.close(tcpfd)
+		return
+	end
+
+	-- tcp connected
+	agent.tcpfd = tcpfd
+	for k, buffer in ipairs(agent.buffer_list) do
+		tcp.write(tcpfd, buffer)
+	end
+	while true do
+		-- tcp error
+		local ret, err = tcp.read(tcpfd)
+		if not ret then
+			break
+		end
+
+		-- kcp close
+		agent = kcpAgent[kcpfd]
+		if not agent then
+			break
+		end
+		local buffer = string.pack(">s2", ret)
+		skynet.redirect(agent.kcp_sender, kcpfd, "client", 0, buffer)
+	end
+end
+
 function SOCKET.data(kcpfd, msg, socket_type)
 	local agent = kcpAgent[kcpfd]
 	if agent then
@@ -85,7 +108,7 @@ function SOCKET.data(kcpfd, msg, socket_type)
 		if tcpfd then
 			tcp.write(tcpfd, msg)
 		else
-			table.insert(agent.buffer_list, msg)
+			data_preopen(kcpfd, msg)
 		end
 	end
 end
