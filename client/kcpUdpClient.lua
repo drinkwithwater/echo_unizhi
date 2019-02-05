@@ -43,9 +43,8 @@ local num = 0
 function KcpUdpClient:ping()
 	if self.serverFd and self.token then
 		num=num+1
-		-- print("self.serverFd and self.token",num,self.serverFd , self.token)
-		-- local pack = UdpMessage.c2sPing(self.serverFd,self.token)
-		-- self:send(pack)
+		local pack = UdpMessage.c2sPing(self.serverFd, self.token)
+		self:send(pack)
 	end
 end
 
