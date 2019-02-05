@@ -13,8 +13,8 @@ local STATE_ESTABLISHED = 2
 local STATE_CLOSE = 3
 
 local KCP_TIME_COE = 10 -- convert skynet.now() to kcp time (xxx ms)
-local OFFLINE_TIMEOUT = 6000 -- 60s, no msg (include ping) for 60s will cause connection close..
-local CONN_TIMEOUT = 600 -- 6s
+local OFFLINE_TIMEOUT = 2000 -- 20s, no msg (include ping) for 60s will cause connection close..
+local CONN_TIMEOUT = 300 -- 6s
 
 local function udp_address(vFrom)
 	--local _1, vPort = socket.udp_address(vFrom)
