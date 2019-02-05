@@ -160,11 +160,6 @@ function CMD.exit()
 	end
 end
 
-function UDP_CMD.redirect(vFd, vPayload)
-	local nBodyServer = getBodyServer(vFd)
-	skynet.redirect(nBodyServer, vFd, "socket", 0, vPayload)
-end
-
 -- kcptimeout close
 function UDP_CMD.close(vFd)
 	local nConn = mFdToConn[vFd]

@@ -47,7 +47,7 @@ skynet.register_protocol {
 	unpack = function (msg, sz)
 		return msg, sz
 	end,
-	dispatch = function (vFd, vSource, vMsg, vSize)
+	dispatch = function (vSession, vFd, vMsg, vSize)
 		local nKcp = mFdToKcp[vFd]
 		if nKcp then
 			-- args should be ptr

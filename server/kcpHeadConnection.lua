@@ -94,7 +94,7 @@ end
 function KcpHeadConnection:onInput(vToken, vPayload, vLen)
 	if self.mToken == vToken and self.mState == STATE_ESTABLISHED then
 		self.mLastMsgTime = skynet.now()
-		skynet.redirect(self.mBodyServer, 0, "socket", self.mFd, vPayload, vLen)
+		skynet.redirect(self.mBodyServer, self.mFd, "socket", 0, vPayload, vLen)
 		return true
 	else
 		local nAddr = udp_address(self.mFrom)
