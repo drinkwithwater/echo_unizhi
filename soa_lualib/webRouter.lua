@@ -2,6 +2,7 @@ local zlib = require "zlib"
 local crypt = require "client.crypt"
 local lpeg = require "lpeg"
 local cjson = require "cjson"
+local skynet = require "skynet"
 
 local url_key_base = skynet.getenv("url_key_base") or "yesyesyes"
 local function combine(rootToUrlDict)

@@ -7,6 +7,7 @@ local SOCKET_TCP = 1
 local SOCKET_KCP = 2
 
 local CMD = {}
+local GM = {}
 local KCP = {}
 local SOCKET = {}
 local gate
@@ -86,8 +87,11 @@ end
 
 ---------------------- f}}} ----------------------------
 
-function CMD.start(conf)
-	skynet.call(gate, "lua", "open" , conf)
+function CMD.start()
+	gate = skynet.newservice("naivegate")
+	skynet.call(gate, "lua", "open" , {
+		port = tonumber(skynet.getenv("client_tcp_port")),
+	})
 	skynet.fork(function()
 		while(true) do
 			for k, agent in pairs(kcpAgent) do
@@ -98,16 +102,16 @@ function CMD.start(conf)
 	end)
 end
 
-skynet.start(function()
-	skynet.dispatch("lua", function(session, source, cmd, subcmd, ...)
-		if cmd == "socket" then
-			local f = SOCKET[subcmd]
-			f(...)
-			-- socket api don't need return
-		else
-			local f = assert(CMD[cmd])
-			skynet.ret(skynet.pack(f(subcmd, ...)))
-		end
-	end)
-	gate = skynet.newservice("naivegate")
-end)
+function CMD.init(bootstrap)
+	bootstrap.registerNoReturn("socket", SOCKET)
+	bootstrap.register("gm", GM)
+end
+
+function GM.get()
+	return {
+		kcpAgent = kcpAgent,
+		tcpAgent = tcpAgent,
+	}
+end
+
+return CMD

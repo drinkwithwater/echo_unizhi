@@ -59,6 +59,7 @@ skynet.register_protocol {
 				skynet.send(watchdog, "lua", "socket", "data", fd, strData)
 			elseif typeStr then
 				socketdriver.close(fd)
+				skynet.send(watchdog, "lua", "socket", "close", fd)
 			else
 				skynet.error("gate msg type:", typeid)
 			end
