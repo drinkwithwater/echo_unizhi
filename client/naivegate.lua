@@ -53,13 +53,19 @@ skynet.register_protocol {
 			local typeStr = toType[typeid]
 			if typeStr=="accept" then
 				socketdriver.start(ud)
+				connection[ud] = true
 				skynet.send(watchdog, "lua", "socket", "open", ud, data)
 			elseif typeStr=="data" then
-				local strData = netpack.tostring(data, ud)
-				skynet.send(watchdog, "lua", "socket", "data", fd, strData)
+				if connection[fd] then
+					local strData = netpack.tostring(data, ud)
+					skynet.send(watchdog, "lua", "socket", "data", fd, strData)
+				end
 			elseif typeStr then
-				socketdriver.close(fd)
-				skynet.send(watchdog, "lua", "socket", "close", fd)
+				if connection[fd] then
+					socketdriver.close(fd)
+					skynet.send(watchdog, "lua", "socket", "close", fd)
+					connection[fd] = nil
+				end
 			else
 				skynet.error("gate msg type:", typeid)
 			end
