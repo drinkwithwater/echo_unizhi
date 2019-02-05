@@ -31,7 +31,7 @@ local function close_agent(kcpfd)
 			tcp.close(tcpfd)
 			tcpAgent[tcpfd] = nil
 		end
-		skynet.send(udpserver, "lua", "close", kcpfd)
+		skynet.send(udpserver, "lua", "kcp", "close", kcpfd)
 		kcpAgent[kcpfd] = nil
 	end
 end
@@ -59,6 +59,11 @@ function SOCKET.open(kcpfd, addr, token, kcp_sender)
 		if not ret then
 			break
 		else
+			while #ret >= 65536 do
+				local buffer = string.pack(">s2", ret:sub(1,65535))
+				skynet.redirect(agent.kcp_sender, kcpfd, "client", 0, buffer)
+				ret = ret:sub(65536)
+			end
 			local buffer = string.pack(">s2", ret)
 			skynet.redirect(agent.kcp_sender, kcpfd, "client", 0, buffer)
 		end
