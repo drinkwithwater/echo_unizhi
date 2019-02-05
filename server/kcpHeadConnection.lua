@@ -81,8 +81,7 @@ function KcpHeadConnection:onUdpOper(vOper, vToken, vFrom)
 		if vOper == UdpMessage.C2S_ACK then -- client handshake ACK
 			self:doUdpSend(UdpMessage.s2cAck(self.mFd, self.mToken))
 		elseif vOper == UdpMessage.C2S_PING then -- client ping
-			-- TODO ping do not update msg time for vpn
-			-- self.mLastMsgTime = skynet.now()
+			self.mLastMsgTime = skynet.now()
 		end
 	end
 end
