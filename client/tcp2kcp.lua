@@ -38,6 +38,14 @@ local function close_agent(tcpfd)
 	end
 end
 
+function KCP.onClose(kcpfd)
+	local agent = kcpAgent[kcpfd]
+	if agent then
+		skynet.send(gate, "lua", "kick", agent.tcp_fd)
+		close_agent(agent.tcp_fd)
+	end
+end
+
 function KCP.onMessage(kcpfd, source, data)
 	local agent = kcpAgent[kcpfd]
 	if agent then
@@ -56,7 +64,7 @@ function SOCKET.open(tcpfd, addr)
 		tcpfd = tcpfd,
 		addr = addr,
 		buffer_list = {},
-		kcpClient = KcpUdpClient.new(kcpfd, 0, KCP.onMessage),
+		kcpClient = KcpUdpClient.new(kcpfd, 0, KCP.onMessage, KCP.onClose),
 	}
 	agent.kcpClient:connect(kcp_ip, kcp_port)
 	tcpAgent[tcpfd] = agent

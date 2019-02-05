@@ -15,7 +15,7 @@ local STATE_WAIT_SYN = 2
 local STATE_WAIT_ACK = 3
 local STATE_UP = 4
 
-function KcpUdpClient:ctor(id, source, callback)
+function KcpUdpClient:ctor(id, source, callback, closecallback)
 	self.fd = testudp.lcreateclient()
 	self.ip = nil
 	self.port = nil
@@ -30,6 +30,7 @@ function KcpUdpClient:ctor(id, source, callback)
 	self.id = id
 	self.source = source
 	self.callback = callback
+	self.closecallback = closecallback
 	self.buffer = ""
 	self.nextLen = 0
 end
@@ -72,6 +73,10 @@ function KcpUdpClient:update()
 			elseif oper == UdpMessage.S2C_ACK and self.state == STATE_WAIT_ACK then
 				self.state = STATE_UP
 				skynet.error("kcp connected fd=", self.id)
+			elseif oper == UdpMessage.S2C_RST and serverFd == self.serverFd then
+				self.closecallback(self.id)
+				skynet.error("kcp disconnect connected fd=", self.id)
+				return
 			end
 		end
 	end
@@ -125,6 +130,12 @@ function KcpUdpClient:update()
 			nOkay, nData = self:unpackMessage("")
 		end
 		self.kcp:lkcp_update(skynet.now()*10)
+		--[[local waitsnd = self.kcp:lkcp_waitsnd()
+		if waitsnd > 40 then
+			self.closecallback(self.id)
+			skynet.error("kcp disconnect connected fd=", self.id)
+			return
+		end]]
 	end
 
 end

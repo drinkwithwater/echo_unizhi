@@ -27,6 +27,13 @@ function CMD.open( source, conf )
 	watchdog = source
 end
 
+function CMD.kick(source, fd)
+	if connection[fd] then
+		socketdriver.close(fd)
+		connection[fd] = nil
+	end
+end
+
 function CMD.close()
 	assert(socket)
 	socketdriver.close(socket)

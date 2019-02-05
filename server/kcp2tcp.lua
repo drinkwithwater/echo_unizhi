@@ -31,6 +31,7 @@ local function close_agent(kcpfd)
 			tcp.close(tcpfd)
 			tcpAgent[tcpfd] = nil
 		end
+		skynet.send(udpserver, "lua", "close", kcpfd)
 		kcpAgent[kcpfd] = nil
 	end
 end
