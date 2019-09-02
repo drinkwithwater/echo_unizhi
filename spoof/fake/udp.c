@@ -46,7 +46,7 @@ uint16_t checksum(uint8_t *data, unsigned int size)
 }
 
 
-unsigned int build_ip_packet(struct in_addr src_addr, struct in_addr dst_addr, uint8_t protocol, uint8_t *ip_packet, uint8_t *data, unsigned int data_size)
+unsigned int build_ip_packet(struct in_addr *src_addr, struct in_addr *dst_addr, uint8_t protocol, uint8_t *ip_packet, uint8_t *data, unsigned int data_size)
 {
     struct iphdr *ip_header;
 
@@ -60,8 +60,8 @@ unsigned int build_ip_packet(struct in_addr src_addr, struct in_addr dst_addr, u
     ip_header->ttl = 64;
     ip_header->protocol = protocol;
     ip_header->check = 0; // Filled in automatically
-    ip_header->saddr = src_addr.s_addr;
-    ip_header->daddr = dst_addr.s_addr;
+    ip_header->saddr = src_addr->s_addr;
+    ip_header->daddr = dst_addr->s_addr;
 
     memcpy(ip_packet + sizeof(struct iphdr), data, data_size);
 
@@ -71,7 +71,7 @@ unsigned int build_ip_packet(struct in_addr src_addr, struct in_addr dst_addr, u
 
 #define MAX_PSEUDO_PKT_SIZE 2048
 
-unsigned int build_udp_packet(struct sockaddr_in src_addr, struct sockaddr_in dst_addr, uint8_t *udp_packet, uint8_t *data, unsigned int data_size)
+unsigned int build_udp_packet(struct sockaddr_in *src_addr, struct sockaddr_in *dst_addr, uint8_t *udp_packet, uint8_t *data, unsigned int data_size)
 {
     uint8_t pseudo_packet[MAX_PSEUDO_PKT_SIZE];
     uint16_t length;
@@ -80,8 +80,8 @@ unsigned int build_udp_packet(struct sockaddr_in src_addr, struct sockaddr_in ds
 
     length = UDP_HDR_SIZE + data_size;
     udph = (struct udphdr *)udp_packet;
-    udph->source = src_addr.sin_port;
-    udph->dest = dst_addr.sin_port;
+    udph->source = src_addr->sin_port;
+    udph->dest = dst_addr->sin_port;
     udph->len = htons(length);
     memcpy(udp_packet + UDP_HDR_SIZE, data, data_size);
 
@@ -91,8 +91,8 @@ unsigned int build_udp_packet(struct sockaddr_in src_addr, struct sockaddr_in ds
     }
 
     // Calculate checksum with pseudo ip header
-    p_iphdr->source_addr = src_addr.sin_addr.s_addr;
-    p_iphdr->dest_addr = dst_addr.sin_addr.s_addr;
+    p_iphdr->source_addr = src_addr->sin_addr.s_addr;
+    p_iphdr->dest_addr = dst_addr->sin_addr.s_addr;
     p_iphdr->zeros = 0;
     p_iphdr->prot = IPPROTO_UDP; //udp
     p_iphdr->length = udph->len;
@@ -114,9 +114,9 @@ void send_udp_packet(int raw_sock, struct sockaddr_in src_addr, struct sockaddr_
     uint8_t packet[ETH_DATA_LEN];
 
     memset(packet, 0, ETH_DATA_LEN);
-    ip_payload_size = build_udp_packet(src_addr, dst_addr, packet + sizeof(struct iphdr), data, data_size);
+    ip_payload_size = build_udp_packet(&src_addr, &dst_addr, packet + sizeof(struct iphdr), data, data_size);
 
-    packet_size = build_ip_packet(src_addr.sin_addr, dst_addr.sin_addr, IPPROTO_UDP, packet, packet + sizeof(struct iphdr), ip_payload_size);
+    packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, packet + sizeof(struct iphdr), ip_payload_size);
 
     if(sendto(raw_sock, packet, packet_size, 0, (struct sockaddr *)&dst_addr, sizeof(dst_addr)) < 0){
         perror("sendto");

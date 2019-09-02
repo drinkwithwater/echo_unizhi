@@ -56,9 +56,9 @@ int fakesend(int raw_sock, uint8_t *data, unsigned int data_size, struct sockadd
     src_addr.sin_port = htons(FAKE_PORT);
     inet_aton(srchost, &src_addr.sin_addr);
 
-    packet_size = build_udp_packet(src_addr, dst_addr, udp_packet, data, data_size);
+    packet_size = build_udp_packet(&src_addr, &dst_addr, udp_packet, data, data_size);
 
-    packet_size = build_ip_packet(src_addr.sin_addr, dst_addr.sin_addr, IPPROTO_UDP, packet, udp_packet, packet_size);
+    packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, udp_packet, packet_size);
 
     send_udp_packet(raw_sock, src_addr, dst_addr, data, data_size);
 
@@ -129,8 +129,9 @@ int main(){
 				fakesend(raw_fd, buffer, packet_size, src_addr);
 			}else {
 				printf("not spoofing\n");
-				memcpy(&src_addr, &addr, sizeof(src_addr));
-				sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&addr, sizeof(addr));
+				//memcpy(&src_addr, &addr, sizeof(src_addr));
+				fakesend(raw_fd, buffer, packet_size, addr);
+				//sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&addr, sizeof(addr));
 			}
 		}
 
