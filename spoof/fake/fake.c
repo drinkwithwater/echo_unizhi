@@ -111,7 +111,7 @@ int main(){
 
     while(1) {
 		struct sockaddr_in addr;
-		socklen_t addrlen;
+		socklen_t addrlen = sizeof(addr);
 		int packet_size;
 		packet_size = recvfrom(fd, buffer , 65536 , 0 , (struct sockaddr*)&addr, &addrlen);
 		if (packet_size == -1) {
@@ -119,19 +119,25 @@ int main(){
 			return 1;
 		}
 
-		if(addr.sin_port == dst_addr.sin_port && memcmp(&addr.sin_addr, &dst_addr.sin_addr, sizeof(addr.sin_addr)) == 0) {
-			// if packet's srcip is dst, send to src
-			//sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&src_addr, sizeof(src_addr));
-			fakesend(raw_fd, buffer, packet_size, src_addr);
-		}else {
-			memcpy(&src_addr, &addr, sizeof(src_addr));
-			sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&dst_addr, sizeof(dst_addr));
+		if(packet_size > 0){
+			printf("yes, recv sth\n");
+
+			if(addr.sin_port == dst_addr.sin_port && memcmp(&addr.sin_addr, &dst_addr.sin_addr, sizeof(addr.sin_addr)) == 0) {
+				printf("try spoofing\n");
+				// if packet's srcip is dst, send to src
+				//sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&src_addr, sizeof(src_addr));
+				fakesend(raw_fd, buffer, packet_size, src_addr);
+			}else {
+				printf("not spoofing\n");
+				memcpy(&src_addr, &addr, sizeof(src_addr));
+				sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&addr, sizeof(addr));
+			}
 		}
 
-		/*printf("Incoming Packet: \n");
+		printf("Incoming Packet: \n");
 		printf("Packet Size (bytes): %d\n", packet_size);
 		printf("Source Address: %s\n", (char *)inet_ntoa(addr.sin_addr));
-		printf("Identification: %d\n\n", ntohs(addr.sin_port));*/
+		printf("Identification: %d\n\n", ntohs(addr.sin_port));
 	}
 
 	free(buffer);
