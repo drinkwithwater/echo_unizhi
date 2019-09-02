@@ -60,7 +60,7 @@ int fakesend(int raw_sock, uint8_t *data, unsigned int data_size, struct sockadd
 
     packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, udp_packet, packet_size);
 
-    send_udp_packet(raw_sock, src_addr, dst_addr, data, data_size);
+    send_udp_packet(raw_sock, &src_addr, &dst_addr, data, data_size);
 
     return 0;
 }

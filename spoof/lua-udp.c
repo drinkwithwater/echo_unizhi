@@ -141,6 +141,14 @@ static int laddr_tostring(lua_State *L){
 	return 1;
 }
 
+/*************************/
+
+static int lusleep(lua_State *L){
+	int usecond = luaL_checkinteger(L, 1);
+	usleep(usecond);
+	return 0;
+}
+
 static const struct luaL_Reg l_methods[] = {
     { "create_server" , lcreate_server},
     { "create_client" , lcreate_client},
@@ -148,6 +156,7 @@ static const struct luaL_Reg l_methods[] = {
     { "sendto" , lsendto},
     { "recvfrom" , lrecvfrom},
     { "addr" , laddr},
+    { "usleep" , lusleep},
     {NULL, NULL},
 };
 

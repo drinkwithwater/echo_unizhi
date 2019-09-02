@@ -63,7 +63,7 @@ unsigned int build_ip_packet(struct in_addr *src_addr, struct in_addr *dst_addr,
     ip_header->saddr = src_addr->s_addr;
     ip_header->daddr = dst_addr->s_addr;
 
-    memcpy(ip_packet + sizeof(struct iphdr), data, data_size);
+    memmove(ip_packet + sizeof(struct iphdr), data, data_size);
 
     return sizeof(struct iphdr) + data_size;
 }
@@ -83,7 +83,7 @@ unsigned int build_udp_packet(struct sockaddr_in *src_addr, struct sockaddr_in *
     udph->source = src_addr->sin_port;
     udph->dest = dst_addr->sin_port;
     udph->len = htons(length);
-    memcpy(udp_packet + UDP_HDR_SIZE, data, data_size);
+    memmove(udp_packet + UDP_HDR_SIZE, data, data_size);
 
     if(length + sizeof(struct pseudo_iphdr) > MAX_PSEUDO_PKT_SIZE){
         fprintf(stderr, "Buffer size not enough");
@@ -99,27 +99,26 @@ unsigned int build_udp_packet(struct sockaddr_in *src_addr, struct sockaddr_in *
 
     // Do NOT use udph->len instead of length.
     // udph->len is in big endian
-    memcpy(pseudo_packet + sizeof(struct pseudo_iphdr), udph, length);
+    memmove(pseudo_packet + sizeof(struct pseudo_iphdr), udph, length);
     udph->check = checksum(pseudo_packet, sizeof(struct pseudo_iphdr) + length);
 
     return length;
 }
 
 
-void send_udp_packet(int raw_sock, struct sockaddr_in src_addr, struct sockaddr_in dst_addr, uint8_t *data, unsigned int data_size)
+void send_udp_packet(int raw_sock, struct sockaddr_in *src_addr, struct sockaddr_in *dst_addr, uint8_t *data, unsigned int data_size)
 {
-    int flag = 1;
     unsigned int packet_size;
     unsigned int ip_payload_size;
     uint8_t packet[ETH_DATA_LEN];
 
     memset(packet, 0, ETH_DATA_LEN);
-    ip_payload_size = build_udp_packet(&src_addr, &dst_addr, packet + sizeof(struct iphdr), data, data_size);
+    ip_payload_size = build_udp_packet(src_addr, dst_addr, packet + sizeof(struct iphdr), data, data_size);
 
-    packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, packet + sizeof(struct iphdr), ip_payload_size);
+    packet_size = build_ip_packet(&(src_addr->sin_addr), &(dst_addr->sin_addr), IPPROTO_UDP, packet, packet + sizeof(struct iphdr), ip_payload_size);
 
-    if(sendto(raw_sock, packet, packet_size, 0, (struct sockaddr *)&dst_addr, sizeof(dst_addr)) < 0){
-        perror("sendto");
+    if(sendto(raw_sock, packet, packet_size, 0, (struct sockaddr *)dst_addr, sizeof(struct sockaddr_in)) < 0){
+        perror("sendto error");
         exit(1);
     }
 }
