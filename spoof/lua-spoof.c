@@ -40,8 +40,8 @@ static int lclose(lua_State *L){
 	return 0;
 }
 
-// sendto(fd,addrstr,buffer)
-static int lsendto(lua_State *L){
+// sendto(fd,srcaddr,dstaddr,buffer)
+static int lsendspoof(lua_State *L){
 	int vFd = luaL_checkinteger(L, 1);
 
 	struct sockaddr_in *vSrcAddr = (struct sockaddr_in *)lua_touserdata(L, 2);
@@ -57,7 +57,7 @@ static int lsendto(lua_State *L){
 static const struct luaL_Reg l_methods[] = {
     { "create" , lcreate},
     { "close" , lclose},
-    { "sendto" , lsendto},
+    { "sendspoof" , lsendspoof},
     {NULL, NULL},
 };
 
