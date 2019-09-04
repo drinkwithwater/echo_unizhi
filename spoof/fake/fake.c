@@ -46,19 +46,16 @@ void hexdump(unsigned char *data, unsigned int data_bytes)
 
 int fakesend(int raw_sock, uint8_t *data, unsigned int data_size, struct sockaddr_in dst_addr)
 {
-    uint8_t packet[ETH_DATA_LEN];
-    uint8_t udp_packet[ETH_DATA_LEN];
     char *srchost = FAKE_IP;
-    unsigned int packet_size;
     struct sockaddr_in src_addr;
 
     src_addr.sin_family = AF_INET;
     src_addr.sin_port = htons(FAKE_PORT);
     inet_aton(srchost, &src_addr.sin_addr);
 
-    packet_size = build_udp_packet(&src_addr, &dst_addr, udp_packet, data, data_size);
+    //packet_size = build_udp_packet(&src_addr, &dst_addr, udp_packet, data, data_size);
 
-    packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, udp_packet, packet_size);
+    //packet_size = build_ip_packet(&src_addr.sin_addr, &dst_addr.sin_addr, IPPROTO_UDP, packet, udp_packet, packet_size);
 
     send_udp_packet(raw_sock, &src_addr, &dst_addr, data, data_size);
 
@@ -122,17 +119,20 @@ int main(){
 		if(packet_size > 0){
 			printf("yes, recv sth\n");
 
-			if(addr.sin_port == dst_addr.sin_port && memcmp(&addr.sin_addr, &dst_addr.sin_addr, sizeof(addr.sin_addr)) == 0) {
+			//send_udp_packet(raw_fd, &addr, &addr, buffer, packet_size);
+			fakesend(raw_fd, buffer, packet_size, addr);
+			/*if(addr.sin_port == dst_addr.sin_port && memcmp(&addr.sin_addr, &dst_addr.sin_addr, sizeof(addr.sin_addr)) == 0) {
 				printf("try spoofing\n");
 				// if packet's srcip is dst, send to src
 				//sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&src_addr, sizeof(src_addr));
-				fakesend(raw_fd, buffer, packet_size, src_addr);
+				fakesend(raw_fd, buffer, packet_size, addr);
 			}else {
 				printf("not spoofing\n");
 				//memcpy(&src_addr, &addr, sizeof(src_addr));
 				fakesend(raw_fd, buffer, packet_size, addr);
+				//send_udp_packet(raw_fd, &addr, &addr, buffer, packet_size);
 				//sendto(fd, buffer, packet_size, 0, (struct sockaddr*)&addr, sizeof(addr));
-			}
+			}*/
 		}
 
 		printf("Incoming Packet: \n");

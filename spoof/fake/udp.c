@@ -83,7 +83,8 @@ unsigned int build_udp_packet(struct sockaddr_in *src_addr, struct sockaddr_in *
     udph->source = src_addr->sin_port;
     udph->dest = dst_addr->sin_port;
     udph->len = htons(length);
-    memmove(udp_packet + UDP_HDR_SIZE, data, data_size);
+    udph->check = 0;
+    memcpy(udp_packet + UDP_HDR_SIZE, data, data_size);
 
     if(length + sizeof(struct pseudo_iphdr) > MAX_PSEUDO_PKT_SIZE){
         fprintf(stderr, "Buffer size not enough");
@@ -99,7 +100,11 @@ unsigned int build_udp_packet(struct sockaddr_in *src_addr, struct sockaddr_in *
 
     // Do NOT use udph->len instead of length.
     // udph->len is in big endian
-    memmove(pseudo_packet + sizeof(struct pseudo_iphdr), udph, length);
+    memcpy(pseudo_packet + sizeof(struct pseudo_iphdr), udph, length);
+
+	// set last byte = 0 because odd case
+	pseudo_packet[sizeof(struct pseudo_iphdr) + length] = 0;
+
     udph->check = checksum(pseudo_packet, sizeof(struct pseudo_iphdr) + length);
 
     return length;
@@ -112,7 +117,6 @@ void send_udp_packet(int raw_sock, struct sockaddr_in *src_addr, struct sockaddr
     unsigned int ip_payload_size;
     uint8_t packet[ETH_DATA_LEN];
 
-    memset(packet, 0, ETH_DATA_LEN);
     ip_payload_size = build_udp_packet(src_addr, dst_addr, packet + sizeof(struct iphdr), data, data_size);
 
     packet_size = build_ip_packet(&(src_addr->sin_addr), &(dst_addr->sin_addr), IPPROTO_UDP, packet, packet + sizeof(struct iphdr), ip_payload_size);
