@@ -254,6 +254,18 @@ static int lkcp_setminrto(lua_State* L){
     return 0;
 }
 
+//@author ChenZe
+static int lkcp_waitsnd(lua_State* L){
+	ikcpcb* kcp = check_kcp(L, 1);
+	if (kcp == NULL) {
+        lua_pushnil(L);
+        lua_pushstring(L, "error: kcp not args");
+        return 2;
+	}
+	int waitSend = ikcp_waitsnd(kcp);
+	lua_pushinteger(L, waitSend);
+    return 1;
+}
 
 
 static const struct luaL_Reg lkcp_methods [] = {
@@ -268,6 +280,7 @@ static const struct luaL_Reg lkcp_methods [] = {
     { "lkcp_setmtu" , lkcp_setmtu },
     { "lkcp_setstream" , lkcp_setstream },
     { "lkcp_setminrto" , lkcp_setminrto },
+    { "lkcp_waitsnd" , lkcp_waitsnd},
 	{NULL, NULL},
 };
 
